@@ -1,0 +1,18 @@
+# Ignore sbt build artifacts
+/target/
+/project/target/
+/.idea/
+/.vscode/
+*.iml
+*.log
+.DS_Store
+# Ignore Scala/Java build files
+*.class
+*.tasty
+# Ignore OS files
+Thumbs.db
+# Ignore jar files
+*.jar
+# Ignore generated files
+*.out
+
