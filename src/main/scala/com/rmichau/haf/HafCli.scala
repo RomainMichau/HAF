@@ -16,5 +16,5 @@ object HafCli {
   val shHostOpt: Opts[String] = Opts.option[String]("shHost", help = "SparkHistory host")
 
   val hafConfig: Opts[HafConfig] =
-    (filterOpt, rmHostOpt, jhHostOpt, shHostOpt).mapN(HafConfig)
+    (filterOpt, rmHostOpt, jhHostOpt, shHostOpt).mapN(HafConfig.apply)
 }
