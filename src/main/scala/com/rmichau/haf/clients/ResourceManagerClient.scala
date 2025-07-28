@@ -22,9 +22,17 @@ class ResourceManagerClient(host: String) extends Client {
                     user: String,
                     name: String,
                     maybeTrackingUrl: Option[String] = None,
+                    applicationType: String,
+                    startedTime: Long
                   ) extends HadoopApp {
     override val trackingUrl: String = maybeTrackingUrl.getOrElse(s"http://$host/cluster/app/$id")
     val dataSource: DataSource = DataSource.YarnResourceManager
+
+    override val startDate: String = {
+      val date = new java.util.Date(startedTime)
+      val formatter = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+      formatter.format(date)
+    }
   }
 
   case class Apps(app: Seq[RMApp])

@@ -22,12 +22,23 @@ class SparkHistoryClient(host: String) extends Client {
                   name: String,
                   attempts: Seq[Attempt],
                 ) extends HadoopApp {
-    val trackingUrl = s"http://$host/jobhistory/job/$id"
+    val trackingUrl = s"http://$host/history/$id"
     val user = attempts.headOption.map(_.sparkUser).getOrElse("unknown")
     val dataSource = DataSource.SparkHistory
+    val applicationType = "???"
+
+    override def startDate: String = {
+      attempts.headOption match {
+        case Some(attempt) =>
+          val date = new java.util.Date(attempt.startTimeEpoch)
+          val formatter = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+          formatter.format(date)
+        case None => "????"
+      }
+    }
   }
 
-  case class Attempt(sparkUser: String)
+  case class Attempt(sparkUser: String,startTimeEpoch: Long)
 
   given ReadWriter[Attempt] = macroRW
 

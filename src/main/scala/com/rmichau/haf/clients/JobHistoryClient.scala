@@ -20,10 +20,19 @@ class JobHistoryClient(host: String) extends Client {
                   id: String,
                   user: String,
                   name: String,
+                  startTime: Long
                 )
     extends HadoopApp {
     val dataSource = DataSource.YarnJobHistory
     val trackingUrl = s"http://$host/jobhistory/job/$id"
+
+    override val applicationType: String = "???"
+
+    override def startDate: String = {
+      val date = new java.util.Date(startTime)
+      val formatter = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+      formatter.format(date)
+    }
   }
 
   case class Jobs(job: Seq[Job])
