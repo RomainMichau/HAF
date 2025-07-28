@@ -1,51 +1,54 @@
 package com.rmichau.haf
 
-import cats.effect.{ExitCode, IO, Outcome}
+import cats.data.OptionT
+import cats.effect.{ExitCode, Fiber, FiberIO, IO, Outcome}
+import cats.syntax.parallel._
 import com.monovore.decline.Opts
 import com.monovore.decline.effect.CommandIOApp
-import com.rmichau.haf.clients.{HadoopApp, JobHistoryClient, ResourceManagerClient, SparkHistoryClient}
+import com.rmichau.haf.clients.{Client, HadoopApp, JobHistoryClient, ResourceManagerClient, SparkHistoryClient}
 import com.rmichau.haf.Utils
 
 object Application extends CommandIOApp(
   name = "haf",
   header = "Hadoop Application Finder"
 ) {
-  def filterAndPrint(filter: String, appsOutcome: Outcome[IO, Throwable, Seq[HadoopApp]]): IO[Unit] = {
-    appsOutcome match {
-      case Outcome.Succeeded(appsIO) => appsIO.flatMap { apps =>
-        val filteredApps = apps.filter(_.toString.contains(filter))
-        IO(println(s"Filtered Apps: ${filteredApps.map(_.prettyPrint(filter)).mkString("\n")}"))
+  private def printFilter(filter: String): IO[Unit] =
+    IO(println(s"Filtering applications with: $filter"))
+
+  // Query and print results for a given client
+  def requestClientIfDefined(
+                              label: String,
+                              hostOpt: Option[String],
+                              createClient: String => Client,
+                              filter: String,
+                              spinner: Spinner
+                            ): IO[Fiber[IO, Throwable, Unit]] = {
+    hostOpt
+      .map { host =>
+        createClient(host).query()
+          .map(_.filter(_.toString.contains(filter)))
+          .flatTap(_ => spinner.removeSpinner(label))
+          .flatMap(filteredApps => IO(println(s"Filtered Apps: ${filteredApps.map(_.prettyPrint(filter)).mkString("\n")}")))
+          .start
       }
-    }
+      .getOrElse(IO.unit.start)
   }
 
   override def main: Opts[IO[ExitCode]] = {
     HafCli.hafConfig.map { config =>
-      val rmClient = new ResourceManagerClient(config.rmHost)
-      val jhClient = new JobHistoryClient(config.jhHost)
-      val sparkClient = new SparkHistoryClient(config.shHost)
-      val hafArt =
-        """
-          | ___  ___  ________  ________
-          ||\  \|\  \|\   __  \|\  _____\
-          |\ \  \\\  \ \  \|\  \ \  \__/
-          | \ \   __  \ \   __  \ \   __\
-          |  \ \  \ \  \ \  \ \  \ \  \_|
-          |   \ \__\ \__\ \__\ \__\ \__\
-          |    \|__|\|__|\|__|\|__|\|__|
-""".stripMargin
+      val filter = config.filter
       for {
-        _ <- IO(println(hafArt))
-        _ <- IO(println(s"Filtering applications with: ${config.filter}"))
-        sparkAppsIO <- sparkClient.query().start
-        rmAppsIO <- rmClient.query().start
-        jhAppIO <- jhClient.query().start
-        rmAppsOutcome <- Utils.spinner("ResourceManager Apps").use(_ => rmAppsIO.join)
-        _ <- filterAndPrint(config.filter, rmAppsOutcome)
-        jhAppsOutcome <- Utils.spinner("JobHistory Apps").use(_ => jhAppIO.join)
-        _ <- filterAndPrint(config.filter, jhAppsOutcome)
-        sparkHistoryOutcome <- Utils.spinner("SparkHistory Apps").use(_ => sparkAppsIO.join)
-        _ <- filterAndPrint(config.filter, sparkHistoryOutcome)
+        _ <- Utils.printArt()
+        _ <- printFilter(config.filter)
+        spinner <- Utils.initSpinner()
+        spinFiber <- spinner.letsSpin.start
+        rmFiber <- requestClientIfDefined("RM Apps", config.rmHost, new ResourceManagerClient(_), config.filter, spinner)
+        _ <- spinner.addSpinner("RM Apps")
+        jhFiber <- requestClientIfDefined("Job History Apps", config.jhHost, new JobHistoryClient(_), config.filter, spinner)
+        _ <- spinner.addSpinner("Job History Apps")
+        spFiber <- requestClientIfDefined("Spark History Apps", config.shHost, new SparkHistoryClient(_), config.filter, spinner)
+        _ <- spinner.addSpinner("Spark History Apps")
+        _ <- (spFiber.joinWithNever, jhFiber.joinWithNever, rmFiber.joinWithNever).parTupled
       } yield ExitCode.Success
     }
   }

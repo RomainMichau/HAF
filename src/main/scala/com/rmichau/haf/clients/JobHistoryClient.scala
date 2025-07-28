@@ -6,10 +6,10 @@ import upickle.default.*
 import java.net.URI
 import scala.util.Try
 
-class JobHistoryClient(host: String) extends Client {
+class JobHistoryClient(host: String, httpClient: HttpClient = CurlClient) extends Client {
   def query(): IO[Seq[HadoopApp]] = {
     for {
-      resSt <- ClientHelper.run(URI.create(s"http://$host/ws/v1/history/mapreduce/jobs"))
+      resSt <- httpClient.run(URI.create(s"http://$host/ws/v1/history/mapreduce/jobs"))
     } yield Try{read[Root](resSt.stdout).jobs.job} match {
       case scala.util.Success(jobs) => jobs
       case scala.util.Failure(ex) => throw new RuntimeException(s"Failed to parse job history: ${ex.getMessage}, ${resSt.stdout}", ex)
@@ -20,10 +20,19 @@ class JobHistoryClient(host: String) extends Client {
                   id: String,
                   user: String,
                   name: String,
+                  startTime: Long
                 )
     extends HadoopApp {
     val dataSource = DataSource.YarnJobHistory
     val trackingUrl = s"http://$host/jobhistory/job/$id"
+
+    override val applicationType: String = "???"
+
+    override def startDate: String = {
+      val date = new java.util.Date(startTime)
+      val formatter = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+      formatter.format(date)
+    }
   }
 
   case class Jobs(job: Seq[Job])

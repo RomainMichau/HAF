@@ -1,18 +1,54 @@
 # Ignore sbt build artifacts
-/target/
-/project/target/
+target/
+project/target/
+project/project/target/
+project/project/project/
+.bsp/
+
+# IDE files
 /.idea/
 /.vscode/
+/.metals/
+/.bloop/
 *.iml
+*.ipr
+*.iws
+
+# Logs
 *.log
+logs/
+
+# OS files
 .DS_Store
-# Ignore Scala/Java build files
+Thumbs.db
+
+# Scala/Java build files
 *.class
 *.tasty
-# Ignore OS files
-Thumbs.db
-# Ignore jar files
+*.cache
+
+# JAR files (unless they're dependencies)
 *.jar
-# Ignore generated files
+
+# Generated files
 *.out
+
+# sbt specific
+.sbt
+dist/*
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala worksheets
+*.sc
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Assembly plugin
+assembly/
 
