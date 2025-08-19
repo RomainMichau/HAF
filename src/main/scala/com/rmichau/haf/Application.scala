@@ -25,6 +25,7 @@ object Application extends CommandIOApp(
                             ): IO[Fiber[IO, Throwable, Unit]] = {
     hostOpt
       .map { host =>
+        spinner.addSpinner(label) >>
         createClient(host).query()
           .map(_.filter(_.toString.contains(filter)))
           .flatTap(_ => spinner.removeSpinner(label))
@@ -43,11 +44,8 @@ object Application extends CommandIOApp(
         spinner <- Utils.initSpinner()
         spinFiber <- spinner.letsSpin.start
         rmFiber <- requestClientIfDefined("RM Apps", config.rmHost, new ResourceManagerClient(_), config.filter, spinner)
-        _ <- spinner.addSpinner("RM Apps")
         jhFiber <- requestClientIfDefined("Job History Apps", config.jhHost, new JobHistoryClient(_), config.filter, spinner)
-        _ <- spinner.addSpinner("Job History Apps")
         spFiber <- requestClientIfDefined("Spark History Apps", config.shHost, new SparkHistoryClient(_), config.filter, spinner)
-        _ <- spinner.addSpinner("Spark History Apps")
         _ <- (spFiber.joinWithNever, jhFiber.joinWithNever, rmFiber.joinWithNever).parTupled
       } yield ExitCode.Success
     }
