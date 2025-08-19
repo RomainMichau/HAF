@@ -33,6 +33,10 @@ class JobHistoryClient(host: String, httpClient: HttpClient = CurlClient) extend
       val formatter = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
       formatter.format(date)
     }
+
+    override def state: String = "NOT HANDLED BY JH"
+
+    override def finalStatus: String = "NOT HANDLED BY JH"
   }
 
   case class Jobs(job: Seq[Job])

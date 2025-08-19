@@ -9,7 +9,7 @@ class ResourceManagerClient(host: String, httpClient: HttpClient = CurlClient) e
   def query(): IO[Seq[HadoopApp]] = {
     val url = s"http://$host/ws/v1/cluster/apps?deSelects=resourceRequests&deSelects=timeouts&deSelects=appNodeLabelExpression&deSelects=amNodeLabelExpression&deSelects=resourceInfo"
     for {
-      resSt <-  httpClient.run(java.net.URI.create(url))
+      resSt <- httpClient.run(java.net.URI.create(url))
     } yield Try(read[Root](resSt.stdout).apps.app) match {
       case scala.util.Success(apps) => apps
       case scala.util.Failure(ex) => throw new RuntimeException(s"Failed to parse ResourceManager response: ${ex.getMessage}, ${resSt.stdout}", ex)
@@ -23,7 +23,9 @@ class ResourceManagerClient(host: String, httpClient: HttpClient = CurlClient) e
                     name: String,
                     maybeTrackingUrl: Option[String] = None,
                     applicationType: String,
-                    startedTime: Long
+                    startedTime: Long,
+                    finalStatus: String,
+                    state: String
                   ) extends HadoopApp {
     override val trackingUrl: String = maybeTrackingUrl.getOrElse(s"http://$host/cluster/app/$id")
     val dataSource: DataSource = DataSource.YarnResourceManager

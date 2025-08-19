@@ -36,6 +36,10 @@ class SparkHistoryClient(host: String, httpClient: HttpClient = CurlClient) exte
         case None => "????"
       }
     }
+
+    override def state: String = "NOT HANDLED BY SH"
+
+    override def finalStatus: String = "NOT HANDLED BY SH"
   }
 
   case class Attempt(sparkUser: String,startTimeEpoch: Long)

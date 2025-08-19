@@ -15,6 +15,8 @@ trait HadoopApp {
   def trackingUrl: String
   def applicationType: String
   def startDate: String
+  def state: String
+  def finalStatus: String
   override def toString: String = {
     s"id=$id, user=$user, name=$name, trackingUrl=$trackingUrl, dataSource=$dataSource"
   }
@@ -35,7 +37,9 @@ trait HadoopApp {
       s"${green}Name:${reset} " + highlight(name) + "\n" +
       s"Application Type: " + highlight(applicationType) + "\n" +
       s"Start Date: " + highlight(startDate) + "\n" +
-      s"Tracking URL: " + highlight(trackingUrl) + "\n"
+      s"Tracking URL: " + highlight(trackingUrl) + "\n" +
+      s"Final Status: " + highlight(finalStatus) + "\n" +
+      s"State: " + highlight(state) + "\n"
   }
 }
 trait Client {
